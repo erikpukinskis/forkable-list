@@ -1,0 +1,19 @@
+{
+  "name": "forkable-list",
+  "version": "0.0.0",
+  "description": "",
+  "main": ".js",
+  "dependencies": {
+    "module-library": "*"
+  },
+  "devDependencies": {
+    "run-test": "*"
+  },
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erikpukinskis/forkable-list.git"
+  }
+}
