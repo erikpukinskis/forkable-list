@@ -7,7 +7,13 @@ module.exports = library.export(
     function forkableList() {
       var list = new ForkableList()
 
-      var fresh = {
+      list.segments.push(freshSegment())
+
+      return list
+    }
+
+    function freshSegment() {
+      return {
         mutable: true,
         growable: true,
         store: [],
@@ -15,12 +21,7 @@ module.exports = library.export(
         start: 0,
         length: 0,
       }
-
-      list.segments.push(fresh)
-
-      return list
     }
-
     function ForkableList() {
       this.segments = []
       this.length = 0
@@ -30,7 +31,9 @@ module.exports = library.export(
       var lastSegment = this.segments[this.segments.length-1]
 
       if (!lastSegment.growable) {
-        throw new Error("don't know how to get the next position after an ungrowable segment")
+        lastSegment = freshSegment()
+        lastSegment.origin = this.length
+        this.segments.push(lastSegment)
       }
 
       var pos = lastSegment.origin + lastSegment.length

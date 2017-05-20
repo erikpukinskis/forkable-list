@@ -20,6 +20,8 @@ runTest(
 
     expect(numbers.values()).to.eql(["one", "two", "three"])
 
+    numbers.next() // just to test this code path
+
     done()
   }
 )
