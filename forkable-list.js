@@ -153,7 +153,8 @@ module.exports = library.export(
       }
 
       fork.segments.push(clone)
-
+      fork.length = this.length
+      
       return fork
     }
 
