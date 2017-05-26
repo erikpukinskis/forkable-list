@@ -1,7 +1,7 @@
 var runTest = require("run-test")(require)
 
 runTest(
-  "works",
+  "forking",
   ["./"],
   function(expect, done, forkableList) {
     var odd = forkableList()
@@ -25,3 +25,15 @@ runTest(
     done()
   }
 )
+
+
+runTest(
+  "initialize from array",
+  ["./"],
+  function(expect, done, forkableList) {
+    var some = forkableList(["doing", "the", "most"])
+    expect(some.values()).to.eql(["doing", "the", "most"])
+    done()
+  }
+)
+

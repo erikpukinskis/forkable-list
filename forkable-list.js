@@ -4,24 +4,25 @@ module.exports = library.export(
   "forkable-list",
   function () {
 
-    function forkableList() {
+    function forkableList(array) {
       var list = new ForkableList()
 
-      list.segments.push(freshSegment())
+      list.segments.push(segment(array))
 
       return list
     }
 
-    function freshSegment() {
+    function segment(array) {
       return {
         mutable: true,
         growable: true,
-        store: [],
+        store: array||[],
         origin: 0,
         start: 0,
-        length: 0,
+        length: array ? array.length : 0,
       }
     }
+    
     function ForkableList() {
       this.segments = []
       this.length = 0
@@ -31,7 +32,7 @@ module.exports = library.export(
       var lastSegment = this.segments[this.segments.length-1]
 
       if (!lastSegment.growable) {
-        lastSegment = freshSegment()
+        lastSegment = segment()
         lastSegment.origin = this.length
         this.segments.push(lastSegment)
       }
