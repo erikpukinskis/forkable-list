@@ -17,7 +17,6 @@ module.exports = library.export(
         mutable: true,
         growable: true,
         store: array||[],
-        origin: 0,
         start: 0,
         length: array ? array.length : 0,
       }
@@ -33,51 +32,66 @@ module.exports = library.export(
 
       if (!lastSegment.growable) {
         lastSegment = segment()
-        lastSegment.origin = this.length
         this.segments.push(lastSegment)
       }
 
-      var pos = lastSegment.origin + lastSegment.length
+      var pos = this.length
 
-      lastSegment.length++
       this.length++
+      lastSegment.length++
 
       return pos
     }
 
-    function indexIn(segment, index) {
-      var indexWithinStore = index - segment.origin
-      var startsEarly = indexWithinStore < segment.start
-      var endsLate = indexWithinStore >= segment.start + segment.length
+    function fastForward(segments, index, callback) {
 
-      if (startsEarly || endsLate) {
-        return -1
-      } else {
-        return indexWithinStore
-      }
-    }
-
-    function segmentFor(index, segments) {
-      for(var i=0; i<segments.length; i++) {
+      var i = 0
+      var previousSegmentTotal = 0
+      do {
         var segment = segments[i]
-        var indexWithin = indexIn(segment, index)
-        if (indexWithin != -1) {
-          return segment
+        var next = segments[i+1]
+
+        var fitsInThis = index < previousSegmentTotal + segment.length
+
+        if (fitsInThis) {
+          break;
         }
-      }
+
+        if (!fitsInThis && next) {
+          previousSegmentTotal += segment.length
+          continue;
+        }
+      } while(next)
+
+      callback(segment, previousSegmentTotal)
     }
 
     ForkableList.prototype.set = function(index, item) {
 
-      var segment = segmentFor(index, this.segments)
+      var list = this
 
-      if (!segment) {
-        throw new Error("Tried to set position "+index+" in list, but that position doesn't exist. Try list.set(list.next(), yourValue)")
-      }
+      fastForward(this.segments, index, function(segment, previousSegmentTotal) {
 
-      var indexWithinStore = indexIn(segment, index)
+        var indexWithinStore = index - previousSegmentTotal
 
-      segment.store[indexWithinStore] = item
+        if (!segment.mutable) {
+          list.splice(index, 1, item)
+        }
+
+        segment.store[indexWithinStore] = item
+
+        if (indexWithinStore + 1 > segment.length) {
+          var lastSegment = list.segments[list.segments.length - 1]
+          if (segment != lastSegment) {
+            throw new Error("trying to auto-expand a segment that's not the last segment")
+          }
+          var oldLength = segment.length
+          segment.length = indexWithinStore + 1
+          var added = segment.length - oldLength
+          list.length += added
+        }
+      })
+
     }
 
     ForkableList.prototype.get = function(index) {
@@ -91,46 +105,52 @@ module.exports = library.export(
       return segment.store[indexWithinStore]
     }
 
-    ForkableList.prototype.splice = function(index, deleteCount, item) {
-      if (deleteCount != 0) {
-        throw new Error("splice can't delete yet")
-      }
+    ForkableList.prototype.splice = function(index, deleteCount, item1, item2, etc) {
 
-      var parent = segmentFor(index, this.segments)
+      var list = this
 
-      var itemIndexWithinStore = indexIn(parent, index)
+      fastForward(this.segments, index, function(parent, previousSegmentTotal) {
 
-      var items = [item]
-      this.length += items.length
+        console.log("\nYAS QUEEN\n")
 
-      var beginning = {
-        mutable: false,
-        growable: false,
-        store: parent.store,
-        origin: parent.origin,
-        start: parent.start,
-        length: itemIndexWithinStore,
-      }
-      var middle = {
-        mutable: true,
-        growable: true,
-        store: items,
-        origin: index,
-        start: 0,
-        length: items.length,
-      }
-      var end = {
-        mutable: false,
-        growable: false,
-        store: parent.store,
-        origin: parent.origin + items.length,
-        start: itemIndexWithinStore,
-      }
-      end.length = parent.length - end.start
+        var itemIndexWithinStore = index - previousSegmentTotal
 
-      this.segments = [beginning, middle, end]
+        var items = Array.prototype.slice.call(arguments, 2)
 
-      parent.mutable = false
+        debugger
+        list.length = list.length + items.length - deleteCount
+
+
+        var beginning = {
+          mutable: false,
+          growable: false,
+          store: parent.store,
+          start: parent.start,
+          length: itemIndexWithinStore,
+        }
+
+        var middle = {
+          mutable: true,
+          growable: true,
+          store: items,
+          start: 0,
+          length: items.length,
+        }
+
+        var lastSegmentStart = null
+        var lastSegmentLength = null
+
+        var end = {
+          mutable: false,
+          growable: false,
+          store: parent.store,
+        }
+
+        this.segments = [beginning, middle, end]
+
+        parent.mutable = false
+      })
+
     }
 
     ForkableList.prototype.fork = function() {
@@ -148,12 +168,12 @@ module.exports = library.export(
         mutable: false,
         growable: false,
         store: segment.store,
-        origin: segment.origin,
         start: segment.start,
         length: segment.length,
       }
 
       fork.segments.push(clone)
+      debugger
       fork.length = this.length
       
       return fork
@@ -164,7 +184,7 @@ module.exports = library.export(
 
       var item
       var values = []
-      while(typeof (item = iterator()) != "undefined") {
+      while((item = iterator()) != DONEZO) {
         values.push(item)
       }
       return values
@@ -175,32 +195,34 @@ module.exports = library.export(
         next: 0,
         list: this,
         segmentIndex: 0,
+        previousSegmentTotal: 0
       }
       return iterator.bind(context)
     }
 
+    var DONEZO = {}
+
     function iterator() {
-      var indexWithinStore = -1
+      console.log("need to get "+this.next)
 
-      do {
-        var segment = this.list.segments[this.segmentIndex]
+      var segment = this.list.segments[this.segmentIndex]
 
-        var indexWithinStore = indexIn(segment, this.next)
+      var indexWithinStore = this.next - this.previousSegmentTotal
 
-        if (indexWithinStore == -1) {
-          this.segmentIndex++
-          var hasMoreSegments = !!this.list.segments[this.segmentIndex]
-        } else {
-          hasMoreSegments = false
-        }
-      } while(indexWithinStore == -1 && hasMoreSegments)
+      var isInThis = indexWithinStore < segment.length
 
-      if (indexWithinStore == -1) {
-        return
-      } else {
-        var value = segment.store[indexWithinStore]
+      if (isInThis) {
         this.next++
-        return value
+        return segment.store[indexWithinStore]
+      } else {
+        this.segmentIndex++
+        var next = this.list.segments[this.segmentIndex]
+
+        if (!next) {
+          return DONEZO
+        } else {
+          throw new Error("more segs?")
+        }
       }
     }
 
