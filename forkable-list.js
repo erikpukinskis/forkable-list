@@ -9,6 +9,10 @@ module.exports = library.export(
 
       list.segments.push(segment(array))
 
+      if (array) {
+        list.length = array.length
+      }
+
       return list
     }
 
@@ -49,19 +53,18 @@ module.exports = library.export(
       var previousSegmentTotal = 0
       do {
         var segment = segments[i]
+        var lastExpectedIndex = previousSegmentTotal + segment.length - 1
+
         var next = segments[i+1]
-
-        var fitsInThis = index < previousSegmentTotal + segment.length
-
-        if (fitsInThis) {
+        if (index <= lastExpectedIndex) {
           break;
-        }
-
-        if (!fitsInThis && next) {
+        } else if (next) {
           previousSegmentTotal += segment.length
+          i++
           continue;
         }
       } while(next)
+
 
       callback(segment, previousSegmentTotal)
     }
@@ -74,24 +77,35 @@ module.exports = library.export(
 
         var indexWithinStore = index - previousSegmentTotal
 
-        if (!segment.mutable) {
+        if (segment.mutable) {
+          addToSegment(segment, list, indexWithinStore, item)
+        } else {
           list.splice(index, 1, item)
-        }
-
-        segment.store[indexWithinStore] = item
-
-        if (indexWithinStore + 1 > segment.length) {
-          var lastSegment = list.segments[list.segments.length - 1]
-          if (segment != lastSegment) {
-            throw new Error("trying to auto-expand a segment that's not the last segment")
-          }
-          var oldLength = segment.length
-          segment.length = indexWithinStore + 1
-          var added = segment.length - oldLength
-          list.length += added
         }
       })
 
+    }
+
+    function addToSegment(segment, list, indexWithinStore, item) {
+
+      segment.store[indexWithinStore] = item
+
+      var lastExpectedIndex = segment.start + segment.length - 1
+
+      var isOutOfBounds = indexWithinStore > lastExpectedIndex
+
+
+      if (isOutOfBounds) {
+        var lastSegment = list.segments[list.segments.length - 1]
+
+        if (segment != lastSegment) {
+          throw new Error("trying to auto-expand a segment that's not the last segment")
+        }
+        var oldLength = segment.length
+        segment.length = indexWithinStore + 1
+        var added = segment.length - oldLength
+        list.length += added
+      }
     }
 
     ForkableList.prototype.get = function(index) {
@@ -109,25 +123,56 @@ module.exports = library.export(
 
       var list = this
 
-      fastForward(this.segments, index, function(parent, previousSegmentTotal) {
+      var args = arguments
 
-        console.log("\nYAS QUEEN\n")
+      var segments = this.segments
+      var i = 0
+      var previousSegmentTotal = 0
+      do {
+        var segment = segments[i]
+        var lastExpectedIndex = previousSegmentTotal + segment.length - 1
 
-        var itemIndexWithinStore = index - previousSegmentTotal
+        var next = segments[i+1]
+        if (index <= lastExpectedIndex) {
+          break;
+        } else if (next) {
+          previousSegmentTotal += segment.length
+          i++
+          continue;
+        }
+      } while(next)
 
-        var items = Array.prototype.slice.call(arguments, 2)
 
-        debugger
-        list.length = list.length + items.length - deleteCount
+      debugger
+      fastForward(list.segments, index, function(parent, previousSegmentTotal) {
 
+        var indexWithinStore = index - previousSegmentTotal
+
+        var gap = Math.max(0, indexWithinStore - parent.length - parent.start)
+
+        if (gap > 0) {
+          var firstSegmentLength = parent.length
+          list.length += gap
+        } else {
+          var firstSegmentLength = indexWithinStore
+        }
 
         var beginning = {
           mutable: false,
           growable: false,
           store: parent.store,
           start: parent.start,
-          length: itemIndexWithinStore,
+          length: firstSegmentLength,
         }
+
+        var items = []
+        var newItemCount = Math.max(0, args.length - 2)
+
+        for(var i=0; i<newItemCount; i++) {
+          items[gap+i] = args[2+i]
+        }
+
+        list.length = list.length + newItemCount
 
         var middle = {
           mutable: true,
@@ -137,16 +182,28 @@ module.exports = library.export(
           length: items.length,
         }
 
-        var lastSegmentStart = null
-        var lastSegmentLength = null
+        // store = [a,b,c,d]
+        // items = [x,y]
+        // indexWithinStore = 2
 
-        var end = {
-          mutable: false,
-          growable: false,
-          store: parent.store,
+
+        var lastSegmentStart = indexWithinStore
+
+        var lastSegmentLength = parent.length - indexWithinStore
+
+        list.segments = [beginning, middle]
+
+        if (lastSegmentLength > 0) {
+          var end = {
+            mutable: false,
+            growable: false,
+            store: parent.store,
+            start: lastSegmentStart,
+            length: lastSegmentLength
+          }
+
+          list.segments.push(end)
         }
-
-        this.segments = [beginning, middle, end]
 
         parent.mutable = false
       })
@@ -173,27 +230,25 @@ module.exports = library.export(
       }
 
       fork.segments.push(clone)
-      debugger
       fork.length = this.length
       
       return fork
     }
 
     ForkableList.prototype.values = function() {
-      var iterator = this.iterator()
-
+      var it = newIterator(this)
       var item
       var values = []
-      while((item = iterator()) != DONEZO) {
+      while((item = it()) != DONEZO) {
         values.push(item)
       }
       return values
     }
 
-    ForkableList.prototype.iterator = function() {
+    function newIterator(list) {
       var context = {
         next: 0,
-        list: this,
+        list: list,
         segmentIndex: 0,
         previousSegmentTotal: 0
       }
@@ -203,13 +258,11 @@ module.exports = library.export(
     var DONEZO = {}
 
     function iterator() {
-      console.log("need to get "+this.next)
-
       var segment = this.list.segments[this.segmentIndex]
 
-      var indexWithinStore = this.next - this.previousSegmentTotal
+      var indexWithinStore = this.next - this.previousSegmentTotal + segment.start
 
-      var isInThis = indexWithinStore < segment.length
+      var isInThis = indexWithinStore < segment.start + segment.length
 
       if (isInThis) {
         this.next++
@@ -218,10 +271,11 @@ module.exports = library.export(
         this.segmentIndex++
         var next = this.list.segments[this.segmentIndex]
 
-        if (!next) {
-          return DONEZO
+        if (next) {
+          this.previousSegmentTotal += segment.length
+          return iterator.call(this)
         } else {
-          throw new Error("more segs?")
+          return DONEZO
         }
       }
     }

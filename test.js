@@ -1,7 +1,8 @@
 var runTest = require("run-test")(require)
 
-runTest.only("skipping ahead")
+// runTest.only("skipping ahead")
 // runTest.only("inserting in a later segment")
+runTest.only("splice twice in the middle")
 
 runTest(
   "skipping ahead",
@@ -22,24 +23,22 @@ runTest(
   ["./"],
   function(expect, done, forkableList) {
     var list = forkableList(["do"])
+    expect(list.length).to.equal(1)
+    done.ish("added an item")
+
     var fork = list.fork()
     fork.set(2, "mi")
-
     expect(fork.values()).to.eql(["do", undefined , "mi"])
-
     expect(fork.length).to.equal(3)
+    done.ish("fork has new item and gap")
 
     fork.set(1, "re")
-
     expect(fork.values()).to.eql(["do", "re", "mi"])
-
-    expect(fork.segments[1].store).to.equal(["re", "mi"])
+    expect(fork.segments[1].store).to.eql(["re", "mi"])
+    done.ish("filled the gap on the fork")
 
     list.set(1, "ray")
-
-    expect(list.segments.length).to.equal(1)
-
-    expect(list.segments[0].store).to.eql(["do", "ray"])
+    expect(list.values()).to.eql(["do", "ray"])
 
     done()
   }
@@ -51,23 +50,22 @@ runTest(
   ["./"],
   function(expect, done, forkableList) {
     var list = forkableList(["do", "fa"])
-
     var fork = list.fork()
 
     fork.splice(1, 0, "re")
+    expect(fork.values()).to.eql(["do", "re", "fa"])
+    done.ish("splice one in the middle")
+
+    debugger
     fork.splice(2, 0, "mi")
-
     expect(fork.segments.length).to.equal(3)
-
     expect(fork.segments[1].store).to.equal(["re", "mi"])
-
     expect(fork.values()).to.eql(["do", "re", "mi", "fa"])
+    done.ish("spliced another")
 
     var next = orig.next()
     expect(next).to.equal(2)
-
     orig.set(2, "blah")
-    expect(orig.segments.length).to.equal(1)
     expect(orig.values()).to.eql(["do", "fa", "blah"])
 
     done()
