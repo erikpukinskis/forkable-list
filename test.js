@@ -49,24 +49,23 @@ runTest(
   "splice twice in the middle",
   ["./"],
   function(expect, done, forkableList) {
-    var list = forkableList(["do", "fa"])
-    var fork = list.fork()
+    var original = forkableList(["do", "fa"])
+    var fork = original.fork()
 
     fork.splice(1, 0, "re")
     expect(fork.values()).to.eql(["do", "re", "fa"])
     done.ish("splice one in the middle")
 
-    debugger
     fork.splice(2, 0, "mi")
-    expect(fork.segments.length).to.equal(3)
-    expect(fork.segments[1].store).to.equal(["re", "mi"])
     expect(fork.values()).to.eql(["do", "re", "mi", "fa"])
+    expect(fork.segments.length).to.equal(3)
+    expect(fork.segments[1].store).to.eql(["re", "mi"])
     done.ish("spliced another")
 
-    var next = orig.next()
+    var next = original.next()
     expect(next).to.equal(2)
-    orig.set(2, "blah")
-    expect(orig.values()).to.eql(["do", "fa", "blah"])
+    original.set(2, "blah")
+    expect(original.values()).to.eql(["do", "fa", "blah"])
 
     done()
   }

@@ -121,92 +121,108 @@ module.exports = library.export(
 
     ForkableList.prototype.splice = function(index, deleteCount, item1, item2, etc) {
 
+      var newItemCount = Math.max(0, arguments.length - 2)
+
       var list = this
-
-      var args = arguments
-
       var segments = this.segments
-      var i = 0
+      var segmentIndex = 0
       var previousSegmentTotal = 0
-      do {
-        var segment = segments[i]
-        var lastExpectedIndex = previousSegmentTotal + segment.length - 1
 
-        var next = segments[i+1]
-        if (index <= lastExpectedIndex) {
+      debugger
+      do {
+        var segment = segments[segmentIndex]
+        var lastExpectedIndex = previousSegmentTotal + segment.length - 1
+        var next = segments[segmentIndex + 1]
+        var fits = index <= lastExpectedIndex
+        var couldFit = index <= lastExpectedIndex + newItemCount
+        var isLastSegment = segmentIndex == segments.length
+
+        var isExtendable = isLastSegment && segment.extendable
+
+        if (fits || couldFit || isExtendable) {
           break;
         } else if (next) {
           previousSegmentTotal += segment.length
-          i++
+          segmentIndex++
           continue;
         }
       } while(next)
 
+      var parent = segment
+
+      var indexWithinStore = index - previousSegmentTotal
+
+      var whereParentEnds = parent.start + parent.length
+
+      var gap = Math.max(0, indexWithinStore - whereParentEnds)
+
+      if (parent.growable && indexWithinStore == whereParentEnds) {
+        for(var i=0; i<newItemCount; i++) {
+          parent.store.push(arguments[2+i])
+        }
+        parent.length += newItemCount
+        return
+      }
+
+      var items = []
+
+      for(var i=0; i<newItemCount; i++) {
+        items[gap+i] = arguments[2+i]
+      }
+
+      if (gap > 0) {
+        var firstSegmentLength = parent.length
+        list.length += gap
+      } else {
+        var firstSegmentLength = indexWithinStore
+      }
+
+      var beginning = {
+        mutable: false,
+        growable: false,
+        store: parent.store,
+        start: parent.start,
+        length: firstSegmentLength,
+      }
+
+
+
+      list.length = list.length + newItemCount
+
+      var middle = {
+        mutable: true,
+        growable: true,
+        store: items,
+        start: 0,
+        length: gap + newItemCount,
+      }
+
+      // store = [a,b,c,d]
+      // items = [x,y]
+      // indexWithinStore = 2
+
+
+      var lastSegmentStart = indexWithinStore
+
+      var lastSegmentLength = parent.length - indexWithinStore
 
       debugger
-      fastForward(list.segments, index, function(parent, previousSegmentTotal) {
 
-        var indexWithinStore = index - previousSegmentTotal
+      list.segments = [beginning, middle]
 
-        var gap = Math.max(0, indexWithinStore - parent.length - parent.start)
-
-        if (gap > 0) {
-          var firstSegmentLength = parent.length
-          list.length += gap
-        } else {
-          var firstSegmentLength = indexWithinStore
-        }
-
-        var beginning = {
+      if (lastSegmentLength > 0) {
+        var end = {
           mutable: false,
           growable: false,
           store: parent.store,
-          start: parent.start,
-          length: firstSegmentLength,
+          start: lastSegmentStart,
+          length: lastSegmentLength
         }
 
-        var items = []
-        var newItemCount = Math.max(0, args.length - 2)
+        list.segments.push(end)
+      }
 
-        for(var i=0; i<newItemCount; i++) {
-          items[gap+i] = args[2+i]
-        }
-
-        list.length = list.length + newItemCount
-
-        var middle = {
-          mutable: true,
-          growable: true,
-          store: items,
-          start: 0,
-          length: items.length,
-        }
-
-        // store = [a,b,c,d]
-        // items = [x,y]
-        // indexWithinStore = 2
-
-
-        var lastSegmentStart = indexWithinStore
-
-        var lastSegmentLength = parent.length - indexWithinStore
-
-        list.segments = [beginning, middle]
-
-        if (lastSegmentLength > 0) {
-          var end = {
-            mutable: false,
-            growable: false,
-            store: parent.store,
-            start: lastSegmentStart,
-            length: lastSegmentLength
-          }
-
-          list.segments.push(end)
-        }
-
-        parent.mutable = false
-      })
+      parent.mutable = false
 
     }
 
