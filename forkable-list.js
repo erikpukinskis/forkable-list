@@ -18,8 +18,7 @@ module.exports = library.export(
 
     function segment(array) {
       return {
-        mutable: true,
-        growable: true,
+        mutableAfter: -1,
         store: array||[],
         start: 0,
         length: array ? array.length : 0,
@@ -32,18 +31,18 @@ module.exports = library.export(
     }
 
     ForkableList.prototype.next = function() {
-      var lastSegment = this.segments[this.segments.length-1]
 
-      if (!lastSegment.growable) {
+      var lastSegment = this.segments[this.segments.length-1]
+      var isWriteable = isMutableAt(lastSegment.length, lastSegment)
+
+      if (!isWriteable) {
         lastSegment = segment()
         this.segments.push(lastSegment)
       }
 
       var pos = this.length
-
       this.length++
       lastSegment.length++
-
       return pos
     }
 
@@ -69,6 +68,14 @@ module.exports = library.export(
       callback(segment, previousSegmentTotal)
     }
 
+    function isMutableAt(index, segment) {
+      if (typeof segment.mutableAfter == "undefined") {
+        return false
+      } else if (index > segment.mutableAfter) {
+        return true
+      }
+    }
+
     ForkableList.prototype.set = function(index, item) {
 
       var list = this
@@ -76,8 +83,9 @@ module.exports = library.export(
       fastForward(this.segments, index, function(segment, previousSegmentTotal) {
 
         var indexWithinStore = index - previousSegmentTotal
+        var lastExpectedIndex = segment.start + segment.length
 
-        if (segment.mutable) {
+        if (isMutableAt(indexWithinStore, segment)) {
           addToSegment(segment, list, indexWithinStore, item)
         } else {
           list.splice(index, 1, item)
@@ -88,12 +96,13 @@ module.exports = library.export(
 
     function addToSegment(segment, list, indexWithinStore, item) {
 
-      segment.store[indexWithinStore] = item
+      if (!isMutableAt(indexWithinStore, segment)) {
+        throw new Error("trying to mutate an immutable segment")
+      }
 
       var lastExpectedIndex = segment.start + segment.length - 1
 
       var isOutOfBounds = indexWithinStore > lastExpectedIndex
-
 
       if (isOutOfBounds) {
         var lastSegment = list.segments[list.segments.length - 1]
@@ -106,6 +115,8 @@ module.exports = library.export(
         var added = segment.length - oldLength
         list.length += added
       }
+
+      segment.store[indexWithinStore] = item
     }
 
     ForkableList.prototype.get = function(index) {
@@ -128,7 +139,6 @@ module.exports = library.export(
       var segmentIndex = 0
       var previousSegmentTotal = 0
 
-      debugger
       do {
         var segment = segments[segmentIndex]
         var lastExpectedIndex = previousSegmentTotal + segment.length - 1
@@ -156,7 +166,8 @@ module.exports = library.export(
 
       var gap = Math.max(0, indexWithinStore - whereParentEnds)
 
-      if (parent.growable && indexWithinStore == whereParentEnds) {
+      if (isMutableAt(indexWithinStore, parent)) {
+
         for(var i=0; i<newItemCount; i++) {
           parent.store.push(arguments[2+i])
         }
@@ -178,8 +189,7 @@ module.exports = library.export(
       }
 
       var beginning = {
-        mutable: false,
-        growable: false,
+        mutableAfter: undefined,
         store: parent.store,
         start: parent.start,
         length: firstSegmentLength,
@@ -190,8 +200,7 @@ module.exports = library.export(
       list.length = list.length + newItemCount
 
       var middle = {
-        mutable: true,
-        growable: true,
+        mutableAfter: -1,
         store: items,
         start: 0,
         length: gap + newItemCount,
@@ -206,14 +215,11 @@ module.exports = library.export(
 
       var lastSegmentLength = parent.length - indexWithinStore
 
-      debugger
-
       list.segments = [beginning, middle]
 
       if (lastSegmentLength > 0) {
         var end = {
-          mutable: false,
-          growable: false,
+          mutableAfter: undefined,
           store: parent.store,
           start: lastSegmentStart,
           length: lastSegmentLength
@@ -222,8 +228,16 @@ module.exports = library.export(
         list.segments.push(end)
       }
 
-      parent.mutable = false
+      makeImmutableBefore(indexWithinStore, parent)
+    }
 
+    function makeImmutableBefore(indexWithinStore, segment) {
+
+      if (typeof segment.mutableAfter == "undefined") { return }
+
+      var newMutableAfter = indexWithinStore - 1
+
+      segment.mutableAfter = Math.max(newMutableAfter, segment.mutableAfter)
     }
 
     ForkableList.prototype.fork = function() {
@@ -235,11 +249,10 @@ module.exports = library.export(
         throw new Error("how to fork segmented list?")
       }
 
-      segment.mutable = false
+      makeImmutableBefore(segment.length, segment)
 
       var clone = {
-        mutable: false,
-        growable: false,
+        mutableAfter: undefined,
         store: segment.store,
         start: segment.start,
         length: segment.length,

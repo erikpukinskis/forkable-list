@@ -1,9 +1,5 @@
 var runTest = require("run-test")(require)
 
-// runTest.only("skipping ahead")
-// runTest.only("inserting in a later segment")
-runTest.only("splice twice in the middle")
-
 runTest(
   "skipping ahead",
   ["./"],
@@ -50,6 +46,7 @@ runTest(
   ["./"],
   function(expect, done, forkableList) {
     var original = forkableList(["do", "fa"])
+    expect(original.length).to.equal(2)
     var fork = original.fork()
 
     fork.splice(1, 0, "re")
@@ -78,20 +75,25 @@ runTest(
     var odd = forkableList()
 
     odd.set(odd.next(), "one")
+    expect(odd.length).to.equal(1)
+    expect(odd.values()).to.eql(["one"])
+    done.ish("set one at next available position")
+
     odd.set(odd.next(), "three")
+    expect(odd.values()).to.eql(["one", "three"])
+    done.ish("set again")
 
     var numbers = odd.fork()
     numbers.splice(1, 0, "two")
-
-    odd.set(odd.next(), "five")
-
-    expect(odd.values()).to.eql(["one", "three", "five"])
-
-    done.ish("original list is unaffected")
-
     expect(numbers.values()).to.eql(["one", "two", "three"])
+    done.ish("splicing after two sets")
 
     numbers.next() // just to test this code path
+
+    debugger
+    odd.set(odd.next(), "five")
+    expect(odd.values()).to.eql(["one", "three", "five"])
+    done.ish("original list is unaffected")
 
     done()
   }
