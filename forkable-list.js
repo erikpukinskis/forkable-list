@@ -130,6 +130,65 @@ module.exports = library.export(
       return segment.store[indexWithinStore]
     }
 
+    ForkableList.prototype.join = function(separator) {
+      if (typeof separator == "undefined") {
+        separator = ", "
+      }
+      var it = newIterator(this)
+
+      var item
+      var string
+      while((item = it()) != DONEZO) {
+        debugger
+        if (typeof string == "string") {
+          string += separator
+        } else {
+          string = ""
+        }
+        string += item
+      }
+      return string
+    }
+
+    ForkableList.prototype.map = function(callback) {
+      var it = newIterator(this)
+      var item
+      var values = []
+      while((item = it()) != DONEZO) {
+        values.push(callback(item))
+      }
+      return values
+    }
+
+    ForkableList.prototype.spliceRelativeTo = function(relativeToThisItem, relationship, newItem) {
+      throw new Error("update with new signature")
+
+      // body.spliceRelativeTo(relativeToThisId, relationship, deleteThisMany, newExpressionId)
+
+      for(var i = 0; i < neighbors.length; i++) {
+        var neighborExpression = neighbors[i]
+
+        if (neighborExpression == relativeExpression) {
+
+          lineIndex = i
+
+          if (relationship == "after") {
+            lineIndex++
+          }
+
+          break
+        }
+      }
+
+      if (relationship == "inPlaceOf") {
+        var deleteThisMany = 1
+      } else {
+        var deleteThisMany = 0
+      }
+
+      neighbors.splice(lineIndex, deleteThisMany,  newExpression)
+    }
+
     ForkableList.prototype.splice = function(index, deleteCount, item1, item2, etc) {
 
       var newItemCount = Math.max(0, arguments.length - 2)

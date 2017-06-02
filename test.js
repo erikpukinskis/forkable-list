@@ -1,5 +1,41 @@
 var runTest = require("run-test")(require)
 
+
+runTest(
+  "join",
+  ["./"],
+  function(expect, done, forkableList) {
+    var list = forkableList(["a", "list"])
+    expect(list.join("-")).to.eql("a-list")
+
+    expect(list.map(toLength)).to.eql([1,4])
+
+    function toLength(word) {
+      return word.length
+    }
+
+    done()
+  }
+)
+
+runTest(
+  "splice relative",
+  ["./"],
+  function(expect, done, forkableList) {
+
+    var list = forkableList(["one", "two", "three"])
+
+    list.spliceRelativeTo("three", "before", "and'a")
+
+    expect(list.values()).to.eql(["one", "two", "and'a", "three"])
+
+    done()
+  }
+)
+
+
+
+
 runTest(
   "skipping ahead",
   ["./"],
@@ -109,4 +145,6 @@ runTest(
     done()
   }
 )
+
+
 
