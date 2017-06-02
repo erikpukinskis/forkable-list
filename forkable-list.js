@@ -120,14 +120,14 @@ module.exports = library.export(
     }
 
     ForkableList.prototype.get = function(index) {
+      var value
 
-      var segment = segmentFor(index, this.segments)
+      fastForward(this.segments, index, function(segment, previousSegmentTotal) {
+        var indexWithinStore = index - previousSegmentTotal
+        value = segment.store[indexWithinStore]
+      })
 
-      if (!segment) { return }
-
-      var indexWithinStore = indexIn(segment, index)
-
-      return segment.store[indexWithinStore]
+      return value
     }
 
     ForkableList.prototype.join = function(separator) {
@@ -160,33 +160,33 @@ module.exports = library.export(
       return values
     }
 
-    ForkableList.prototype.spliceRelativeTo = function(relativeToThisItem, relationship, newItem) {
-      throw new Error("update with new signature")
+    ForkableList.prototype.spliceRelativeTo = function(relativeToThisItem, relationship, deleteThisMany, item1, item2, etc) {
 
-      // body.spliceRelativeTo(relativeToThisId, relationship, deleteThisMany, newExpressionId)
+      if (relationship == "inPlaceOf" && deleteThisMany != 1) {
+        throw new Error("splicing something inPlaceOf means deleting 1. Try list.spliceRelativeTo(whatever, \"inPlaceOf\", 1, yourReplacement)")
+      }
 
-      for(var i = 0; i < neighbors.length; i++) {
-        var neighborExpression = neighbors[i]
+      for(var i=0; i<this.length; i++) {
+        var index = i
+        var isMatch = this.get(index) == relativeToThisItem
 
-        if (neighborExpression == relativeExpression) {
+        if (!isMatch) { continue }
 
-          lineIndex = i
-
-          if (relationship == "after") {
-            lineIndex++
-          }
-
-          break
+        if (relationship == "after") {
+          index++
         }
+
+        var spliceArguments = [index, deleteThisMany]
+
+        for(var i=3; i<arguments.length; i++) {
+          spliceArguments.push(arguments[i])
+        }
+
+        this.splice.apply(this, spliceArguments)
+
+        break;
       }
 
-      if (relationship == "inPlaceOf") {
-        var deleteThisMany = 1
-      } else {
-        var deleteThisMany = 0
-      }
-
-      neighbors.splice(lineIndex, deleteThisMany,  newExpression)
     }
 
     ForkableList.prototype.splice = function(index, deleteCount, item1, item2, etc) {
