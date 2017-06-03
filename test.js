@@ -16,6 +16,8 @@ runTest(
 
     expect(list.join("-")).to.eql("a-list")
 
+    expect(forkableList([]).join("blah")).to.equal("")
+
     done()
   }
 )
@@ -36,7 +38,6 @@ runTest(
     done()
   }
 )
-
 
 
 

@@ -146,7 +146,11 @@ module.exports = library.export(
         }
         string += item
       }
-      return string
+      if (typeof string == "undefined") {
+        return ""
+      } else {
+        return string
+      }
     }
 
     ForkableList.prototype.map = function(callback) {
