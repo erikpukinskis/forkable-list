@@ -6,17 +6,21 @@ runTest(
   ["./"],
   function(expect, done, forkableList) {
     var list = forkableList(["a", "list"])
-    expect(list.join("-")).to.eql("a-list")
-
-    expect(list.map(toLength)).to.eql([1,4])
 
     function toLength(word) {
       return word.length
     }
 
+    expect(list.map(toLength)).to.eql([1,4])
+    done.ish("map")
+
+    expect(list.join("-")).to.eql("a-list")
+
     done()
   }
 )
+
+
 
 runTest(
   "splice relative",
@@ -25,7 +29,7 @@ runTest(
 
     var list = forkableList(["one", "two", "three"])
 
-    list.spliceRelativeTo("three", "before", "and'a")
+    list.spliceRelativeTo("three", "before", 0, "and'a")
 
     expect(list.values()).to.eql(["one", "two", "and'a", "three"])
 

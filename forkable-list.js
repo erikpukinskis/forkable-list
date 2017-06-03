@@ -139,7 +139,6 @@ module.exports = library.export(
       var item
       var string
       while((item = it()) != DONEZO) {
-        debugger
         if (typeof string == "string") {
           string += separator
         } else {
@@ -162,6 +161,10 @@ module.exports = library.export(
 
     ForkableList.prototype.spliceRelativeTo = function(relativeToThisItem, relationship, deleteThisMany, item1, item2, etc) {
 
+      if (typeof deleteThisMany != "number") {
+        throw new Error("Third argument to list.spliceRelativeTo was "+deleteThisMany+". It should be a number of how many to delete.")
+      }
+
       if (relationship == "inPlaceOf" && deleteThisMany != 1) {
         throw new Error("splicing something inPlaceOf means deleting 1. Try list.spliceRelativeTo(whatever, \"inPlaceOf\", 1, yourReplacement)")
       }
@@ -172,6 +175,7 @@ module.exports = library.export(
 
         if (!isMatch) { continue }
 
+        debugger
         if (relationship == "after") {
           index++
         }
@@ -225,7 +229,9 @@ module.exports = library.export(
 
       var gap = Math.max(0, indexWithinStore - whereParentEnds)
 
-      if (isMutableAt(indexWithinStore, parent)) {
+      var isAtEnd = indexWithinStore ==whereParentEnds
+
+      if (isAtEnd && isMutableAt(indexWithinStore, parent)) {
 
         for(var i=0; i<newItemCount; i++) {
           parent.store.push(arguments[2+i])
