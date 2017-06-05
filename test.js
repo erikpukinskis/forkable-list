@@ -1,5 +1,18 @@
 var runTest = require("run-test")(require)
 
+runTest(
+  "iterate",
+  ["./"],
+  function(expect, done, forkableList) {
+    var list = forkableList(["abra", "ca", "dabra"])
+    var spell = ""
+    list.forEach(function(item) {
+      spell += item
+    })
+    expect(spell).to.equal("abracadabra")
+    done()
+  }
+)
 
 runTest(
   "join",

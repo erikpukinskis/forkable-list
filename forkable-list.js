@@ -163,6 +163,14 @@ module.exports = library.export(
       return values
     }
 
+    ForkableList.prototype.forEach = function(callback) {
+      var it = newIterator(this)
+      var item
+      while((item = it()) != DONEZO) {
+        callback(item)
+      }
+    }
+
     ForkableList.prototype.spliceRelativeTo = function(relativeToThisItem, relationship, deleteThisMany, item1, item2, etc) {
 
       if (typeof deleteThisMany != "number") {
