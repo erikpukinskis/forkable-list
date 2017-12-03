@@ -68,6 +68,24 @@ runTest(
   }
 )
 
+
+runTest(
+  "length after forking",
+  ["./"],
+  function(expect, done, forkableList) {
+    var alphabet = forkableList(["a", "b", "c", "d"])
+
+    var spell = alphabet.fork()
+
+    alphabet.set(4, "e")
+    alphabet.splice(5, 0, "f", "g")
+
+    expect(alphabet.length).to.equal(7)
+    done()
+  }
+)
+
+
 runTest(
   "inserting in a later segment",
   ["./"],
