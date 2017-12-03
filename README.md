@@ -124,7 +124,7 @@ mixedCase.set(5, "F")
 mixedCase.join("")
 // returns "aBcDeFg"
 ```
-This list has 4 segments: the original abcdefg plus three segments for the capital letters s. If we forked it three times, we'd have three lists with four segments each. If we make a snapshot we have three lists with just one reference to the same segment, using just a little bookkeeping memory:
+This list has 4 segments: a reference to the original abcdefg plus three new segments for the capital letters s. If we forked it three times, we'd have three lists with four segments each. If we make a snapshot we have three lists with just one reference to the same segment, using just a little bookkeeping memory:
 
 ```javascript
 var clean = forkableList(abracadabra.values())
