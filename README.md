@@ -102,7 +102,7 @@ Well... sorta.
 
 Immutable.js makes a new data structure on *every write*. So if you call `set` 3 times, you get 3 references to unique data structures.
 
-ForkableList only forks the data structure when you explicitly `fork`, you can `set` and `splice` as many times as you want. It will mutate the underlying segments as long as doing so doesn't modify any of the forks. So pushing 20 items to a list just gives you a 20 item array with a little packaging around it.
+ForkableList only forks the data structure when you explicitly `fork`. In between forks you can `set` and `splice` as many times as you want. It will mutate the underlying segments as long as doing so doesn't modify any of the forks. So pushing 20 items to a list just gives you a 20 item array with a little packaging around it.
 
 Immutable.js is also built of like 100 files and written in ES6, so you have to transpile it to use it in the browser. ForkableList is less than 400 lines of plain old ES5 in a single file. If you want to understand what it's doing and how it performs, you just read that one file.
 
