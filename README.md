@@ -133,7 +133,7 @@ var fork2 = fork1.fork()
 var fork3 = fork2.fork()
 ```
 
-## IMMUTABLE ALL THE THINGS!!1 AMIRITE?
+## SWEET! IMMUTABLE ALL THE THINGS!!1 AMIRITE?
 
 No, you are wrong. No pattern should be used everywhere, and people who treat immutability like a cult are destined to write bad code. ForkableList is intentionally a blend of mutable and immutable ideas, because it allows you to get fast write performance when changing multiple items in a row while also allowing you to keep multiple references to state.
 
