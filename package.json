@@ -1,6 +1,6 @@
 {
   "name": "forkable-list",
-  "version": "0.14.0",
+  "version": "0.15.0",
   "description": "Build an array, fork it, and modify both branches, sharing memory between them",
   "main": "forkable-list.js",
   "dependencies": {
