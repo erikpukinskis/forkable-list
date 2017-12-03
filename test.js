@@ -165,4 +165,16 @@ runTest(
 )
 
 
+runTest(
+  "find",
+  ["./"],
+  function(expect, done, forkableList) {
+    var list = forkableList(["a", "b", "c"])
+
+    expect(list.find("c")).to.equal(2)
+    done()
+  }
+)
+
+
 

@@ -181,28 +181,30 @@ module.exports = library.export(
         throw new Error("splicing something inPlaceOf means deleting 1. Try list.spliceRelativeTo(whatever, \"inPlaceOf\", 1, yourReplacement)")
       }
 
-      for(var i=0; i<this.length; i++) {
-        var index = i
-        var isMatch = this.get(index) == relativeToThisItem
+      var index = this.find(relativeToThisItem)
 
-        if (!isMatch) { continue }
-
-        debugger
-        if (relationship == "after") {
-          index++
-        }
-
-        var spliceArguments = [index, deleteThisMany]
-
-        for(var i=3; i<arguments.length; i++) {
-          spliceArguments.push(arguments[i])
-        }
-
-        this.splice.apply(this, spliceArguments)
-
-        break;
+      if (relationship == "after") {
+        index++
       }
 
+      var spliceArguments = [index, deleteThisMany]
+
+      for(var i=3; i<arguments.length; i++) {
+        spliceArguments.push(arguments[i])
+      }
+
+      this.splice.apply(this, spliceArguments)
+    }
+
+    ForkableList.prototype.find = function(item) {
+      for(var i=0; i<this.length; i++) {
+        var index = i
+        if (this.get(i) == item) {
+          return i
+        }
+      }
+
+      throw new Error(item+" is not in list "+this.join())
     }
 
     ForkableList.prototype.splice = function(index, deleteCount, item1, item2, etc) {

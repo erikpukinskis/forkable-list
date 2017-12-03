@@ -76,6 +76,9 @@ spell.length
 spell.get(2)
 // returns "r", the third letter of abracadabra
 
+spell.find("r")
+// returns 2
+
 var codes = spell.map(function(letter) {
   return letter.charCodeAt(0)
 })
