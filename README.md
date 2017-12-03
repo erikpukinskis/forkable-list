@@ -12,6 +12,12 @@ spell.splice(3, 1, "a", "d", "a", "b", "r", "a")
 
 alphabet.set(4, "e")
 alphabet.splice(5, 0, "f", "g")
+
+alphabet.values()
+// returns ["a", "b", "c", "d", "e", "f". "g"]
+
+spell.join("")
+// returns "abracadabra"
 ```
 At this point the original list is stored using a single array. This is what is created in memory:
 ```javascript
@@ -60,12 +66,6 @@ So, it's useful if you want to create a giant array and then make a bunch of for
 There are bunch of methods for iterating through the list:
 
 ```javascript
-alphabet.values()
-// returns ["a", "b", "c", "d", "e", "f". "g"]
-
-spell.join("")
-// returns "abracadabra"
-
 spell.forEach(function(letter) {
   console.log(letter)
 })
@@ -86,4 +86,46 @@ You can also search for an item and splice relative to it:
 ```javascript
 alphabet.spliceRelativeTo("g", "after", 0, "h")
 // alphabet is now ["a", "b", "c", "d", "e", "f", "g", "h"]
+```
+
+## Why?
+
+You can use to implement an undo feature without keeping a full copy of your data at every save point.
+
+You can also have multiple users making small changes to a document without creating a full copy of each version.
+
+## Isn't this just an immutable array?
+
+Well... sorta.
+
+## Why not use immutable.js
+
+Immutable.js makes a new data structure on *every write*. So if you call set 3 times, you get 3 references to unique data structures.
+
+ForkableList only forks the data structure when you explicitly fork, you can do as many sets and splices as you want. It will mutate the underlying segments as long as doing so doesn't modify any of the forks. So pushing 20 items to a list just gives you a 20 item array with a little packaging around it.
+
+Immutable.js is also built of like 100 files and written in ES6, so you have to transpile it to use it in the browser. ForkableList is less than 400 lines of plain old ES5 in a single file. If you want to understand what it's doing and how it performs, you just read that one file.
+
+It also doesn't let you do too much crazy stuff like deep merging, so you can be reasonably sure of its performance characteristics.
+
+## Won't that still take up a lot of memory if you have lots of discontinuous segments?
+
+Yes, if you make a N modifications and then fork that X times, it will have to make X arrays that are N items long. You may want to snapshot arrays if that is a common case for your data:
+
+```javascript
+var mixedCase = alphabet.fork()
+mixedCase.set(1, "B")
+mixedCase.set(3, "D")
+mixedCase.set(5, "F")
+
+mixedCase.join("")
+// returns "aBcDeFg"
+```
+This list has 4 segments: the original abcdefg plus three segments for the capital letters s. If we forked it three times, we'd have three lists with four segments each. If we make a snapshot we have three lists with just one reference to the same segment, using just a little bookkeeping memory:
+
+```javascript
+var clean = forkableList(abracadabra.values())
+var fork1 = clean.fork()
+var fork2 = fork1.fork()
+var fork3 = fork2.fork()
 ```
