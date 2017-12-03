@@ -16,16 +16,6 @@ alphabet.splice(5, 0, "f", "g")
 alphabet.values()
 // returns ["a", "b", "c", "d", "e", "f". "g"]
 
-console.log("alphabet = "+JSON.stringify(alphabet, null, 2))
-
-console.log("spell = "+JSON.stringify(spell, null, 2))
-
-```
-At this point the original list is stored using a single array:
-```javascript
-alphabet.values()
-// returns ["a", "b", "c", "d", "e", "f", "g"]
-
 spell.join("")
 // returns "abracadabra"
 ```
