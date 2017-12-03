@@ -113,7 +113,7 @@ ForkableList also doesn't let you do too much crazy stuff like deep merging, so 
 
 ## Won't that still take up a lot of memory if you have lots of discontinuous segments?
 
-Yes, if you make a N modifications and then fork that X times, it will have to make X arrays that are N items long. You may want to snapshot arrays if that is a common case for your data:
+Yes, if you make a a lot of discontinuous modifications, like changing every other item, and then fork that X times, it will have to make X arrays that have one reference to each segment. You may want to snapshot arrays if that is a common case for your data:
 
 ```javascript
 var mixedCase = alphabet.fork()
