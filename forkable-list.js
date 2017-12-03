@@ -251,6 +251,7 @@ module.exports = library.export(
           parent.store.push(arguments[2+i])
         }
         parent.length += newItemCount
+        list.length += newItemCount
         return
       }
 
