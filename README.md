@@ -14,7 +14,7 @@ alphabet.set(4, "e")
 alphabet.splice(5, 0, "f", "g")
 
 alphabet.values()
-// returns ["a", "b", "c", "d", "e", "f". "g"]
+// returns ["a", "b", "c", "d", "e", "f", "g"]
 
 spell.join("")
 // returns "abracadabra"
