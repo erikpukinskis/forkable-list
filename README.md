@@ -103,17 +103,17 @@ alphabet.spliceRelativeTo("g", "after", 0, "h")
 // alphabet is now ["a", "b", "c", "d", "e", "f", "g", "h"]
 ```
 
-## Why?
+### Why?
 
-You can use to implement an undo feature without keeping a full copy of your data at every save point.
+You can use it to implement undo without keeping a full copy of your data at every save point.
 
-You can also have multiple users making small changes to a document without creating a full copy of each version.
+You can also have multiple users making small changes to a document without creating a full copy for each user.
 
-## Isn't this just an immutable array?
+### Isn't this just an immutable array?
 
 Well... sorta.
 
-## Why not use immutable.js
+### Why not use immutable.js
 
 Immutable.js makes a new data structure on *every write*. So if you call `set` 3 times, you get 3 references to unique data structures.
 
@@ -123,7 +123,7 @@ Immutable.js is also built of like 100 files and written in ES6, so you have to 
 
 ForkableList also doesn't let you do too much crazy stuff like deep merging, so you can be reasonably sure of its performance characteristics.
 
-## Won't that still take up a lot of memory if you have lots of discontinuous segments?
+### Won't that still take up a lot of memory if you have lots of discontinuous segments?
 
 Yes, if you make a a lot of discontinuous modifications, like changing every other item, and then fork that X times, it will have to make X arrays that have one reference to each segment. You may want to snapshot arrays if that is a common case for your data:
 
@@ -145,7 +145,7 @@ var fork2 = fork1.fork()
 var fork3 = fork2.fork()
 ```
 
-## SWEET! IMMUTABLE ALL THE THINGS!! AMIRITE?
+### SWEET! IMMUTABLE ALL THE THINGS!! AMIRITE?
 
 No, you are wrong. No pattern should be used everywhere, and people who treat immutability like a religion are destined to write bad code. ForkableList is intentionally a blend of mutable and immutable ideas, because it allows you to get fast write performance when changing multiple items in a row while also allowing you to keep multiple references to state.
 
