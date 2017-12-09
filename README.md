@@ -23,9 +23,9 @@ At this point the original list is stored using a single array. This is what is 
 ```javascript
 alphabet = {
   "segments": [
-    { 
-      "mutableAfter": 3,   // <-- this is the original segment
-      "store": [
+    {
+      "mutableAfter": 3,
+      "store": [   // <-- the original store
         "a",
         "b",
         "c",
@@ -38,27 +38,36 @@ alphabet = {
       "length": 7
     }
   ],
-  "length": 5
+  "length": 7
 }
 spell = {
   "segments": [
-    <<< reference to original segment >>>,
+    {
+      "mutableAfter": null,
+      "extendable": false,
+      "store": <<< reference to original store >>>,
+      "start": 0,
+      "length": 2
+    },
     {
       "mutableAfter": -1,
+      "extendable": true,
       "store": [
-        null,
-        "a",
-        "d",
-        "a",
-        "b",
         "r",
         "a"
       ],
       "start": 0,
-      "length": 7
+      "length": 2
+    },
+    {
+      "mutableAfter": null,
+      "extendable": false,
+      "store": <<< reference to original store >>>,
+      "start": 2,
+      "length": 2
     }
   ],
-  "length": 13
+  "length": 6
 }
 ```
 So, it's useful if you want to create a giant array and then make a bunch of forks of it without storing a giant array for every fork. You just store a bunch of little arrays with the changed segments of the fork.
