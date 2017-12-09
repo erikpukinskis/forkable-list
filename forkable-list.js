@@ -19,6 +19,7 @@ module.exports = library.export(
     function segment(array) {
       return {
         mutableAfter: -1,
+        extendable: true,
         store: array||[],
         start: 0,
         length: array ? array.length : 0,
@@ -326,8 +327,6 @@ module.exports = library.export(
         length: firstSegmentLength,
       }
 
-
-
       list.length = list.length + newItemCount
 
       var middle = {
@@ -337,11 +336,6 @@ module.exports = library.export(
         start: 0,
         length: gap + newItemCount,
       }
-
-      // store = [a,b,c,d]
-      // items = [x,y]
-      // indexWithinStore = 2
-
 
       var lastSegmentStart = indexWithinStore
 

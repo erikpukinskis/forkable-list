@@ -25,6 +25,7 @@ alphabet = {
   "segments": [
     {
       "mutableAfter": 3,
+      "extendable": true,
       "store": [   // <-- the original store
         "a",
         "b",
@@ -40,6 +41,8 @@ alphabet = {
   ],
   "length": 7
 }
+```
+```javascript
 spell = {
   "segments": [
     {
