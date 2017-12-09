@@ -1,5 +1,40 @@
 var runTest = require("run-test")(require)
 
+// runTest.only("inserting in a later segment")
+
+
+
+runTest(
+  "splicing in a later immutable segment",
+  ["./"],
+  function(expect, done, forkableList) {
+    var alphabet = forkableList(["a", "b", "c", "d"])
+
+    var spell = alphabet.fork()
+
+    spell.splice(2, 0, "r", "a")
+
+    expect(spell.join("")).to.equal("abracd")
+
+    done.ish("first splice worked")
+
+    spell.splice(3, 1, "o")
+
+    expect(spell.join("")).to.equal("abrocd")
+
+    done.ish("middle splice worked")
+
+    spell.splice(3, 2, "i", "i")
+
+    expect(spell.join("")).to.equal("abriid")
+
+    expect(spell.segments).to.have.lengthOf(3)
+
+    done()
+  }
+)
+
+
 runTest(
   "iterate",
   ["./"],
@@ -96,6 +131,7 @@ runTest(
 
     var fork = list.fork()
     fork.set(2, "mi")
+
     expect(fork.values()).to.eql(["do", undefined , "mi"])
     expect(fork.length).to.equal(3)
     done.ish("fork has new item and gap")
@@ -162,7 +198,6 @@ runTest(
 
     numbers.next() // just to test this code path
 
-    debugger
     odd.set(odd.next(), "five")
     expect(odd.values()).to.eql(["one", "three", "five"])
     done.ish("original list is unaffected")

@@ -69,7 +69,9 @@ module.exports = library.export(
     }
 
     function isMutableAt(index, segment) {
-      if (typeof segment.mutableAfter == "undefined") {
+      if (index < 0) {
+        return false
+      } else if (segment.mutableAfter == null) {
         return false
       } else if (index > segment.mutableAfter) {
         return true
@@ -210,50 +212,98 @@ module.exports = library.export(
     ForkableList.prototype.splice = function(index, deleteCount, item1, item2, etc) {
 
       var newItemCount = Math.max(0, arguments.length - 2)
-
+      var netItemCount = newItemCount - deleteCount
       var list = this
       var segments = this.segments
       var segmentIndex = 0
       var previousSegmentTotal = 0
 
-      do {
+      while(segments[segmentIndex]) {
+
         var segment = segments[segmentIndex]
         var lastExpectedIndex = previousSegmentTotal + segment.length - 1
         var next = segments[segmentIndex + 1]
-        var fits = index <= lastExpectedIndex
-        var couldFit = index <= lastExpectedIndex + newItemCount
         var isLastSegment = segmentIndex == segments.length
+        var indexWithinStore = index - previousSegmentTotal
+        var isMutableHere = isMutableAt(indexWithinStore, segment)
+        var indexWithinNext = index - previousSegmentTotal - segment.length
+        var nextCouldTakeIt = next && isMutableAt(indexWithinNext, next)
 
-        var isExtendable = isLastSegment && segment.extendable
 
-        if (fits || couldFit || isExtendable) {
+        if (!next) {
           break;
-        } else if (next) {
+
+        } else if (index > lastExpectedIndex && !segment.extendable) {
+          previousSegmentTotal += segment.length
+          segmentIndex++
+          continue;
+
+        } else if (isMutableHere && !nextCouldTakeIt) {
+          break;
+
+        } else {
           previousSegmentTotal += segment.length
           segmentIndex++
           continue;
         }
-      } while(next)
+      }
 
       var parent = segment
 
-      var indexWithinStore = index - previousSegmentTotal
-
       var whereParentEnds = parent.start + parent.length
-
       var gap = Math.max(0, indexWithinStore - whereParentEnds)
-
       var isAtEnd = indexWithinStore ==whereParentEnds
+      var hasRemainingItems = indexWithinStore + deleteCount < parent.length
+      var availableToDelete = parent.length - indexWithinStore
 
-      if (isAtEnd && isMutableAt(indexWithinStore, parent)) {
+
+      if (isAtEnd && isMutableHere) {
 
         for(var i=0; i<newItemCount; i++) {
           parent.store.push(arguments[2+i])
         }
-        parent.length += newItemCount
-        list.length += newItemCount
+        parent.length += netItemCount
+        list.length += netItemCount
         return
       }
+
+      if (isMutableHere) {
+        var storeSplice = [
+          indexWithinStore,
+          deleteCount
+        ]
+
+        for(var i=0; i<newItemCount; i++) {
+          storeSplice.push(arguments[2+i])
+        }
+
+        var originalLength = segment.length
+
+        var remainingToDelete = Math.max(0, deleteCount - availableToDeleteAfter(indexWithinStore, segment))
+
+        parent.store.splice.apply(parent.store, storeSplice)
+
+        var deletedCount = deleteCount - remainingToDelete
+
+        parent.length = parent.length + newItemCount - deletedCount
+
+        while(next && remainingToDelete > 0) {
+          var removeFromNextSegment = Math.min(next.length, remainingToDelete)
+
+          next.start += removeFromNextSegment
+          next.length -= removeFromNextSegment
+
+          remainingToDelete -= removeFromNextSegment
+          previousSegmentTotal += segment.length
+          segmentIndex++
+          next = segments[segmentIndex]
+        }
+
+        list.length += netItemCount
+
+        return
+      }
+
 
       var items = []
 
@@ -269,7 +319,8 @@ module.exports = library.export(
       }
 
       var beginning = {
-        mutableAfter: undefined,
+        mutableAfter: null,
+        extendable: false,
         store: parent.store,
         start: parent.start,
         length: firstSegmentLength,
@@ -281,6 +332,7 @@ module.exports = library.export(
 
       var middle = {
         mutableAfter: -1,
+        extendable: true,
         store: items,
         start: 0,
         length: gap + newItemCount,
@@ -299,7 +351,8 @@ module.exports = library.export(
 
       if (lastSegmentLength > 0) {
         var end = {
-          mutableAfter: undefined,
+          mutableAfter: null,
+          extendable: false,
           store: parent.store,
           start: lastSegmentStart,
           length: lastSegmentLength
@@ -311,9 +364,15 @@ module.exports = library.export(
       makeImmutableBefore(indexWithinStore, parent)
     }
 
+
+    function availableToDeleteAfter(index, segment) {
+      var countBeforeIndex = index - segment.start
+      return segment.length - countBeforeIndex
+    }
+
     function makeImmutableBefore(indexWithinStore, segment) {
 
-      if (typeof segment.mutableAfter == "undefined") { return }
+      if (segment.mutableAfter == null) { return }
 
       var newMutableAfter = indexWithinStore - 1
 
@@ -332,7 +391,8 @@ module.exports = library.export(
       makeImmutableBefore(segment.length, segment)
 
       var clone = {
-        mutableAfter: undefined,
+        mutableAfter: null,
+        extendable: false,
         store: segment.store,
         start: segment.start,
         length: segment.length,
