@@ -207,7 +207,7 @@ module.exports = library.export(
         }
       }
 
-      throw new Error(item+" is not in list "+this.join())
+      // throw new Error(item+" is not in list "+this.join())
     }
 
     ForkableList.prototype.splice = function(index, deleteCount, item1, item2, etc) {
