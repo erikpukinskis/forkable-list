@@ -169,8 +169,10 @@ module.exports = library.export(
     ForkableList.prototype.forEach = function(callback) {
       var it = newIterator(this)
       var item
+      var index = 0
       while((item = it()) != DONEZO) {
-        callback(item)
+        callback(item, index)
+        index++
       }
     }
 
